@@ -1,15 +1,36 @@
 import React from "react";
-import { useAuth } from "../context/AuthContext"; // Make sure your AuthContext is set up correctly
+import { useAuth } from "../context/AuthContext"; // Ensure AuthContext is correctly set up
 import { useNavigate } from "react-router-dom";
+import { db } from "../firebase/firebase-config"; // Import Firestore
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleHelpRequest = () => {
-    // Replace with your logic to send a help request to the nearest nurse/ambulance
-    alert("Help request sent to the nearest nurse!");
+  const handleHelpRequest = async () => {
+    if (!user) {
+      alert("You must be logged in to request help.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "emergency_requests"), {
+        userId: user.uid,
+        name: user.displayName || "Anonymous", // Get user's name if available
+        email: user.email,
+        location: "Fetching...", // Later, replace this with live GPS location
+        details: "Medical Emergency!",
+        status: "pending",
+        timestamp: serverTimestamp(),
+      });
+
+      alert("🚨 Emergency request sent! An ambulance is on the way.");
+    } catch (error) {
+      console.error("Error sending request:", error);
+      alert("❌ Failed to send request. Please try again.");
+    }
   };
 
   return (
@@ -25,7 +46,7 @@ const Dashboard = () => {
           <h2>Emergency Assistance</h2>
           <p>If you are experiencing a medical emergency, press the button below to request immediate help.</p>
           <button className="help-btn" onClick={handleHelpRequest}>
-            HELP
+            🚑 HELP
           </button>
         </div>
         <div className="info-card">
